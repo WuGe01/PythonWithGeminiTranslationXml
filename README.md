@@ -1,0 +1,2 @@
+# PythonWithGeminiTranslationXml
+使用Python串接GeminiAI進行翻譯Xml
