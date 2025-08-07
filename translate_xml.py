@@ -18,9 +18,11 @@ def translate_xml_content(xml_string, target_language, model):
         return ""
 
     prompt = (
-        f"Translate only the text content within the XML tags to {target_language}. "
+        "Translate only the text content within the XML tags to {target_language}. "
         "Do not translate the tag names or attributes. "
-        "Return the entire XML structure with the translated content.\n\n"
+        "Return the entire XML structure with the translated content. "
+        "IMPORTANT: Do not add any extra text, comments, or code block markers (like ```xml) before or after the XML content. "
+        "Return only the complete XML string.\n\n"
         "Example:\n"
         "<product>\n"
         "  <name>Smart Coffee Maker</name>\n"
