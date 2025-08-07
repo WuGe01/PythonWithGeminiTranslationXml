@@ -1,11 +1,12 @@
 import os
 import google.generativeai as genai
+
 import time
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog
+import webbrowser
 
 # --- 1. 設定 ---
-# 移除了 genai.configure 的 try-except 區塊，因為 API key 會由 GUI 介面輸入
 model = genai.GenerativeModel('gemini-1.5-flash')
 
 # --- 2. 核心翻譯函式 (保留不變) ---
@@ -59,13 +60,12 @@ class XMLTranslatorApp(tk.Tk):
 
         # API 金鑰設定
         tk.Label(input_frame, text="API 金鑰:").grid(row=0, column=0, sticky='w', padx=5, pady=5)
-        self.api_key_entry = tk.Entry(input_frame, width=50)
+        self.api_key_entry = tk.Entry(input_frame, width=40)
         self.api_key_entry.grid(row=0, column=1, padx=5, pady=5)
-
-        # API 金鑰連結
-        tk.Button(input_frame, text="取得金鑰", command=self.open_api_key_link, relief=tk.FLAT, fg="blue").grid(row=0, column=2, padx=5)
         
-        # 嘗試從環境變數載入金鑰
+        # 新增：API 金鑰取得連結按鈕
+        tk.Button(input_frame, text="取得金鑰", command=self.open_api_key_link, relief=tk.FLAT, fg="blue").grid(row=0, column=2, padx=5)
+
         default_api_key = os.environ.get('GOOGLE_API_KEY', '')
         self.api_key_entry.insert(0, default_api_key)
 
@@ -81,12 +81,11 @@ class XMLTranslatorApp(tk.Tk):
         self.output_path_entry.grid(row=2, column=1, padx=5, pady=5)
         tk.Button(input_frame, text="瀏覽...", command=self.browse_output_folder).grid(row=2, column=2, padx=5)
         
-        # 預設輸出資料夾為 'output'
         self.output_path_entry.insert(0, 'output')
 
-        # 目標語言選擇
+        # 目標語言選擇 (已更新為當地語言名稱)
         tk.Label(input_frame, text="目標語言:").grid(row=3, column=0, sticky='w', padx=5, pady=5)
-        self.language_options = ["Traditional Chinese", "Simplified Chinese", "English", "Japanese"]
+        self.language_options = ["繁體中文", "簡體中文", "English", "日本語"]
         self.language_var = tk.StringVar(self)
         self.language_var.set(self.language_options[0])  # 預設為繁體中文
         tk.OptionMenu(input_frame, self.language_var, *self.language_options).grid(row=3, column=1, sticky='w', padx=5, pady=5)
@@ -98,13 +97,6 @@ class XMLTranslatorApp(tk.Tk):
         # 開始按鈕
         self.start_button = tk.Button(self, text="開始翻譯", command=self.start_translation, width=20, height=2)
         self.start_button.pack(pady=20)
-
-    def open_api_key_link(self):
-        """
-        開啟瀏覽器連結到 Google AI Studio 頁面以取得 API Key。
-        """
-        import webbrowser
-        webbrowser.open("https://aistudio.google.com/app/apikey")
         
     def browse_input_folder(self):
         folder_path = filedialog.askdirectory()
@@ -118,22 +110,31 @@ class XMLTranslatorApp(tk.Tk):
             self.output_path_entry.delete(0, tk.END)
             self.output_path_entry.insert(0, folder_path)
 
+    def open_api_key_link(self):
+        webbrowser.open("https://aistudio.google.com/app/apikey")
+
     def update_status(self, message, color="blue"):
         self.status_label.config(text=message, fg=color)
-        self.update_idletasks() # 強制更新 GUI
+        self.update_idletasks()
 
     def start_translation(self):
-        # 鎖定按鈕避免重複點擊
         self.start_button.config(state=tk.DISABLED)
         self.update_status("正在初始化...")
         
-        # 取得使用者輸入
         api_key = self.api_key_entry.get()
         input_folder = self.input_path_entry.get()
         output_folder = self.output_path_entry.get()
-        target_language = 'Traditional Chinese' # 這裡硬編碼為繁體中文，可修改為下拉選單
+        
+        # 新增：將顯示名稱轉換為 API 所需的英文名稱
+        language_mapping = {
+            "繁體中文": "Traditional Chinese",
+            "簡體中文": "Simplified Chinese",
+            "English": "English",
+            "日本語": "Japanese"
+        }
+        target_language_display = self.language_var.get()
+        target_language = language_mapping.get(target_language_display, "Traditional Chinese")
 
-        # 驗證輸入
         if not api_key:
             self.update_status("錯誤：請輸入 API 金鑰。", "red")
             self.start_button.config(state=tk.NORMAL)
@@ -144,15 +145,17 @@ class XMLTranslatorApp(tk.Tk):
             self.start_button.config(state=tk.NORMAL)
             return
 
-        # 設定 API 金鑰
-        genai.configure(api_key=api_key)
+        try:
+            genai.configure(api_key=api_key)
+        except Exception as e:
+            self.update_status(f"API 金鑰設定錯誤：{e}", "red")
+            self.start_button.config(state=tk.NORMAL)
+            return
 
         try:
-            # 確保輸出資料夾存在
             if not os.path.exists(output_folder):
                 os.makedirs(output_folder)
             
-            # 翻譯核心邏輯
             file_count = 0
             self.update_status("開始翻譯...")
             for root, dirs, files in os.walk(input_folder):
@@ -178,7 +181,7 @@ class XMLTranslatorApp(tk.Tk):
                             f.write(translated_xml_string)
                         
                         file_count += 1
-                        time.sleep(10) # 每次翻譯後延遲10秒
+                        time.sleep(10)
 
             if file_count == 0:
                 self.update_status("警告：找不到任何 XML 檔案進行翻譯。", "red")
@@ -188,9 +191,7 @@ class XMLTranslatorApp(tk.Tk):
         except Exception as e:
             self.update_status(f"發生錯誤：{e}", "red")
 
-        # 恢復按鈕狀態
         self.start_button.config(state=tk.NORMAL)
-
 
 if __name__ == "__main__":
     app = XMLTranslatorApp()
