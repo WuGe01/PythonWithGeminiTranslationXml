@@ -61,6 +61,9 @@ class XMLTranslatorApp(tk.Tk):
         tk.Label(input_frame, text="API 金鑰:").grid(row=0, column=0, sticky='w', padx=5, pady=5)
         self.api_key_entry = tk.Entry(input_frame, width=50)
         self.api_key_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        # API 金鑰連結
+        tk.Button(input_frame, text="取得金鑰", command=self.open_api_key_link, relief=tk.FLAT, fg="blue").grid(row=0, column=2, padx=5)
         
         # 嘗試從環境變數載入金鑰
         default_api_key = os.environ.get('GOOGLE_API_KEY', '')
@@ -81,6 +84,13 @@ class XMLTranslatorApp(tk.Tk):
         # 預設輸出資料夾為 'output'
         self.output_path_entry.insert(0, 'output')
 
+        # 目標語言選擇
+        tk.Label(input_frame, text="目標語言:").grid(row=3, column=0, sticky='w', padx=5, pady=5)
+        self.language_options = ["Traditional Chinese", "Simplified Chinese", "English", "Japanese"]
+        self.language_var = tk.StringVar(self)
+        self.language_var.set(self.language_options[0])  # 預設為繁體中文
+        tk.OptionMenu(input_frame, self.language_var, *self.language_options).grid(row=3, column=1, sticky='w', padx=5, pady=5)
+
         # 狀態顯示
         self.status_label = tk.Label(self, text="請輸入資訊並點擊開始翻譯。", fg="blue")
         self.status_label.pack(pady=10)
@@ -88,6 +98,13 @@ class XMLTranslatorApp(tk.Tk):
         # 開始按鈕
         self.start_button = tk.Button(self, text="開始翻譯", command=self.start_translation, width=20, height=2)
         self.start_button.pack(pady=20)
+
+    def open_api_key_link(self):
+        """
+        開啟瀏覽器連結到 Google AI Studio 頁面以取得 API Key。
+        """
+        import webbrowser
+        webbrowser.open("https://aistudio.google.com/app/apikey")
         
     def browse_input_folder(self):
         folder_path = filedialog.askdirectory()
