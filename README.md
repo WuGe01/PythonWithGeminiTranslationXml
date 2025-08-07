@@ -1,9 +1,34 @@
-# PythonWithGeminiTranslationXml
-使用Python串接GeminiAI進行翻譯Xml
+# RimWorld MOD Gemini AI 翻譯工具
+
+### 簡介
+你是否曾因為好玩的 MOD 都是外文，而感到不知所措？這個工具正是為了解決你的困擾而生！它利用 Google Gemini AI 的強大翻譯能力，可以一鍵將 RimWorld MOD 檔案自動翻譯成你選擇的語言，讓你不再受語言限制，盡情探索遊戲的無限樂趣。
+
+### 功能特色
+- **簡單操作**：直觀的圖形化介面，只需點擊和輸入，無需指令操作。
+- **批次翻譯**：自動處理資料夾中的所有 XML 檔案。
+- **遞迴處理**：即使有子資料夾，也能維持原始的檔案結構。
+- **多語言支援**：提供繁體中文、簡體中文、英文和日文等多種語言選項。
 
 ### 使用步驟
-安裝 google的Python客戶端套件 pip install google-generativeai
 
-### 環境變數
-使用 pip install python-dotenv
-可以將變數放在 .env 檔案裡面
+#### 1. 取得 API 金鑰
+- 點擊工具介面上的「取得金鑰」按鈕，前往 Google AI Studio 網站。
+- 登入你的 Google 帳號後，複製你的 API 金鑰。
+
+#### 2. 安裝與執行
+- **你需要先安裝 Python**。
+- 安裝所需的函式庫：
+  ```sh
+  pip install google-generativeai
+
+  python translate_xml.py
+
+#### 3. 使用介面
+- 在「API 金鑰」欄位中貼上你的金鑰。
+- 點擊「瀏覽...」選擇 MOD 檔案所在的輸入資料夾，以及翻譯結果要儲存的輸出資料夾。
+- 在下拉式選單中選擇目標語言。
+- 點擊「開始翻譯」，程式會自動完成所有工作。
+
+#### 4. 注意事項
+- 翻譯過程中需要網路連線。
+- 為了避免觸發 API 限制，程式在翻譯每個檔案後會自動暫停 10 秒。
