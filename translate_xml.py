@@ -143,7 +143,7 @@ class XMLTranslatorApp(tk.Tk):
             self.output_path_entry.insert(0, folder_path)
 
     def open_api_key_link(self):
-        webbrowser.open("[https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)")
+        webbrowser.open("https://aistudio.google.com/app/apikey")
 
     def update_status(self, message, color="blue"):
         self.status_label.config(text=message, fg=color)
