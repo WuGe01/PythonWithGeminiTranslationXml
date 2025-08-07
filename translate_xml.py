@@ -1,12 +1,7 @@
 import os
 import google.generativeai as genai
 from dotenv import load_dotenv
-import glob
 import time
-# 不需要 xml.etree.ElementTree，因為我們不再遍歷 XML 樹
-# import xml.etree.ElementTree as ET 
-# 也不需要 ThreadPoolExecutor 了
-# from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # --- 在程式碼一開始就載入 .env 檔案 ---
 load_dotenv()
@@ -21,7 +16,6 @@ except KeyError:
 # 設定要使用的模型
 model = genai.GenerativeModel('gemini-1.5-flash')
 
-# --- 2. 核心翻譯函式 (修改為一次翻譯整個 XML 字串) ---
 def translate_xml_content(xml_string, target_language):
     """
     使用 Gemini API 一次性翻譯整個 XML 字串，並保留其結構。
@@ -29,7 +23,6 @@ def translate_xml_content(xml_string, target_language):
     if not xml_string:
         return ""
 
-    # 設計一個精準的 Prompt，要求 AI 翻譯 XML 標籤內的文字
     prompt = (
         f"Translate only the text content within the XML tags to {target_language}. "
         "Do not translate the tag names or attributes. "
@@ -47,72 +40,72 @@ def translate_xml_content(xml_string, target_language):
         "Now, translate the following XML content:\n\n"
         f"{xml_string}"
     )
-    
+
     try:
         response = model.generate_content(prompt)
-        # 這裡就不需要延遲了，因為我們只發送一個請求
-        # time.sleep(10) # 如果你仍然擔心，可以在這裡加上延遲
         return response.text.strip()
     except Exception as e:
         print(f"翻譯時發生錯誤: {e}")
         return f"\n{xml_string}"
 
-# --- 3. 主程式 (修改為處理資料夾和檔案) ---
 def main():
     """
-    主執行函式
+    主執行函式，使用 os.walk 遞迴處理資料夾結構
     """
     input_folder = 'input'
     output_folder = 'output'
     target_language = 'Traditional Chinese'
 
-    if not os.path.exists(output_folder):
-        print(f"建立輸出資料夾: {output_folder}")
-        os.makedirs(output_folder)
-
     if not os.path.exists(input_folder):
         print(f"錯誤：找不到輸入資料夾 '{input_folder}'")
         exit()
 
-    input_files = glob.glob(os.path.join(input_folder, '*.xml'))
+    if not os.path.exists(output_folder):
+        print(f"建立輸出資料夾: {output_folder}")
+        os.makedirs(output_folder)
 
-    if not input_files:
-        print(f"警告：在 '{input_folder}' 資料夾中找不到任何 .xml 檔案。")
-        return
+    print(f"開始遞迴處理 '{input_folder}' 資料夾中的所有 XML 檔案...")
+    print(f"翻譯成 {target_language} 並儲存到 '{output_folder}'...")
 
-    print(f"在 '{input_folder}' 資料夾中找到 {len(input_files)} 個 XML 檔案。")
-    print(f"開始翻譯成 {target_language}...")
-    
-    for input_file_path in input_files:
-        file_name = os.path.basename(input_file_path)
-        output_file_path = os.path.join(output_folder, file_name)
+    file_count = 0
 
-        print(f"\n--- 正在處理檔案: {file_name} ---")
-        try:
-            # 讀取整個檔案的內容為字串
-            with open(input_file_path, 'r', encoding='utf-8') as f:
-                xml_string_to_translate = f.read()
+    for root, dirs, files in os.walk(input_folder):
 
-            print(f"正在將整個檔案送出進行翻譯...")
-            translated_xml_string = translate_xml_content(xml_string_to_translate, target_language)
-            
-            print(f"翻譯完成！")
+        relative_path = os.path.relpath(root, input_folder)
+        output_subfolder = os.path.join(output_folder, relative_path)
 
-            # 將翻譯後的字串寫入新檔案
-            with open(output_file_path, 'w', encoding='utf-8') as f:
-                f.write(translated_xml_string)
-            
-            print(f"已儲存翻譯後的檔案: {output_file_path}")
+        if not os.path.exists(output_subfolder):
+            os.makedirs(output_subfolder)
+            print(f"已建立輸出子資料夾: {output_subfolder}")
 
-        except Exception as e:
-            print(f"檔案 '{file_name}' 發生未預期的錯誤: {e}")
-        
-        # 每次處理完一個檔案後，可以加入延遲
-        # 這樣即使有很多檔案，也可以避免短時間內連續發送請求
-        # 10秒的延遲是個安全的選擇
-        print("等待 10 秒以避免觸發配額限制...")
-        time.sleep(10)
+        for file_name in files:
+            if file_name.endswith('.xml'):
+                input_file_path = os.path.join(root, file_name)
+                output_file_path = os.path.join(output_subfolder, file_name)
+                
+                print(f"\n--- 正在處理檔案: {input_file_path} ---")
+                try:
+                    with open(input_file_path, 'r', encoding='utf-8') as f:
+                        xml_string_to_translate = f.read()
 
+                    translated_xml_string = translate_xml_content(xml_string_to_translate, target_language)
+                    
+                    with open(output_file_path, 'w', encoding='utf-8') as f:
+                        f.write(translated_xml_string)
+                    
+                    print(f"翻譯完成，已儲存至: {output_file_path}")
+                    file_count += 1
+                
+                except Exception as e:
+                    print(f"檔案 '{input_file_path}' 發生未預期的錯誤: {e}")
+
+                print("等待 10 秒以避免觸發配額限制...")
+                time.sleep(10)
+
+    if file_count == 0:
+        print(f"\n警告：在 '{input_folder}' 資料夾及其子資料夾中找不到任何 .xml 檔案。")
+    else:
+        print(f"\n恭喜！總共翻譯了 {file_count} 個檔案。")
 
 if __name__ == "__main__":
     main()
